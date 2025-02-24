@@ -38,6 +38,8 @@ choice BOARD_TYPE
         Board type. 开发板类型
     config BOARD_TYPE_BREAD_COMPACT_WIFI
         bool "面包板新版接线（WiFi）"
+    config BOARD_TYPE_BREAD_COMPACT_WIFI_DOG
+        bool "面包板新版接线（WiFi）狗"
     config BOARD_TYPE_BREAD_COMPACT_WIFI_LCD
         bool "面包板新版接线（WiFi）+ LCD"
     config BOARD_TYPE_BREAD_COMPACT_ML307
@@ -105,7 +107,7 @@ choice BOARD_TYPE
 endchoice
 
 choice DISPLAY_OLED_TYPE
-    depends on BOARD_TYPE_BREAD_COMPACT_WIFI || BOARD_TYPE_BREAD_COMPACT_ML307 || BOARD_TYPE_BREAD_COMPACT_ESP32
+    depends on BOARD_TYPE_BREAD_COMPACT_WIFI || BOARD_TYPE_BREAD_COMPACT_ML307 || BOARD_TYPE_BREAD_COMPACT_ESP32 || BOARD_TYPE_BREAD_COMPACT_WIFI_DOG
     prompt "OLED Type"
     default OLED_SSD1306_128X32
     help
