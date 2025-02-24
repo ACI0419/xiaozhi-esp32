@@ -2,6 +2,7 @@
 #define _BOARD_CONFIG_H_
 
 #include <driver/gpio.h>
+#include <driver/ledc.h>
 
 #define AUDIO_INPUT_SAMPLE_RATE  16000
 #define AUDIO_OUTPUT_SAMPLE_RATE 24000
@@ -48,5 +49,18 @@
 
 #define DISPLAY_MIRROR_X true
 #define DISPLAY_MIRROR_Y true
+
+#define LEDC_TIMER LEDC_TIMER_0
+#define LEDC_MODE LEDC_LOW_SPEED_MODE
+#define LEDC_DUTY_RES LEDC_TIMER_12_BIT
+#define LEDC_FREQUENCY (50)
+#define LEDC_CHANNEL LEDC_CHANNEL_0
+#define LEDC_GPIO_NUM (8)
+
+#define SERVO_MAX_ANGLE 180
+#define SERVO_IDLE_ANGLE 90
+#define SERVO_MIN_ANGLE 0
+#define SERVO_MAX_DUTY 500
+#define SERVO_MIN_DUTY 100
 
 #endif // _BOARD_CONFIG_H_
