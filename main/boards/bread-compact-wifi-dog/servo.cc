@@ -16,6 +16,13 @@ class Servo : public Thing {
 private:
     int angle_ = SERVO_IDLE_ANGLE;
 
+    typedef struct {
+        gpio_num_t gpio;
+        ledc_channel_t channel;
+    } servo_config_t;
+
+    servo_config_t servos[4];
+
     inline long map(long x, long in_min, long in_max, long out_min, long out_max)
     {
         return (x - in_min) * (out_max - out_min) / (in_max - in_min) + out_min;
@@ -33,17 +40,23 @@ private:
         };
         ESP_ERROR_CHECK(ledc_timer_config(&ledc_timer));
 
-        ledc_channel_config_t ledc_channel = {
-            .gpio_num = LEDC_GPIO_NUM,          
-            .speed_mode = LEDC_MODE,
-            .channel = LEDC_CHANNEL,
-            .timer_sel = LEDC_TIMER,
-            // .intr_type = LEDC_INTR_DISABLE,
-            .duty = 0, // Set duty to 0%
-            .hpoint = 0
-        };
+        servos[0]={SERVO_0_GPIO,SERVO_0_LEDC_CHANNEL};
+        servos[1]={SERVO_1_GPIO,SERVO_1_LEDC_CHANNEL};
+        servos[2]={SERVO_2_GPIO,SERVO_2_LEDC_CHANNEL};
+        servos[3]={SERVO_3_GPIO,SERVO_3_LEDC_CHANNEL};
         
-        ESP_ERROR_CHECK(ledc_channel_config(&ledc_channel));
+        for (auto &servo : servos) {
+            ledc_channel_config_t ledc_channel = {
+                .gpio_num = servo.gpio,
+                .speed_mode = LEDC_MODE,
+                .channel = servo.channel,
+                .timer_sel = LEDC_TIMER,
+                // .intr_type = LEDC_INTR_DISABLE,
+                .duty = 0, // Set duty to 0%
+                .hpoint = 0
+            };
+            ESP_ERROR_CHECK(ledc_channel_config(&ledc_channel));
+        }
     }
 
 public:
@@ -59,19 +72,21 @@ public:
         methods_.AddMethod("SetAngle", "设置舵机角度", ParameterList({
             Parameter("angle", "0到180之间的整数", kValueTypeNumber, true)
         }), [this](const ParameterList& parameters) {
-            ESP_ERROR_CHECK(
-                ledc_set_duty(
-                    LEDC_MODE, LEDC_CHANNEL, map(
-                        (static_cast<uint8_t>(parameters["angle"].number())), 
-                        SERVO_MIN_ANGLE, 
-                        SERVO_MAX_ANGLE, 
-                        SERVO_MIN_DUTY, 
-                        SERVO_MAX_DUTY
+            for (auto &servo : servos) {
+                ESP_ERROR_CHECK(
+                    ledc_set_duty(
+                        LEDC_MODE, servo.channel, map(
+                            (static_cast<uint8_t>(parameters["angle"].number())), 
+                            SERVO_MIN_ANGLE, 
+                            SERVO_MAX_ANGLE, 
+                            SERVO_MIN_DUTY, 
+                            SERVO_MAX_DUTY
+                        )
                     )
-                )
-            );
-            // Update duty to apply the new value
-            ESP_ERROR_CHECK(ledc_update_duty(LEDC_MODE, LEDC_CHANNEL));
+                );
+                // Update duty to apply the new value
+                ESP_ERROR_CHECK(ledc_update_duty(LEDC_MODE, servo.channel));
+            }
         });
     }
 };
