@@ -7,7 +7,6 @@
 #include "config.h"
 #include "iot/thing_manager.h"
 #include "led/single_led.h"
-#include "led/circular_strip.h"
 
 #include <wifi_station.h>
 #include <esp_log.h>
@@ -94,6 +93,7 @@ private:
         thing_manager.AddThing(iot::CreateThing("Speaker"));
         //thing_manager.AddThing(iot::CreateThing("Lamp")); //和舵机引脚冲突
         thing_manager.AddThing(iot::CreateThing("Servo"));
+        thing_manager.AddThing(iot::CreateThing("WS2812"));
     }
 
 public:
@@ -105,10 +105,6 @@ public:
         InitializeDisplayI2c();
         InitializeButtons();
         InitializeIot();
-        {
-            static CircularStrip myled(GPIO_NUM_21, 12);
-            myled.myfunc((DeviceState)1);
-        }
     }
 
     virtual Led* GetLed() override {

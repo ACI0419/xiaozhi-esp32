@@ -70,4 +70,7 @@
 #define SERVO_MAX_DUTY 500
 #define SERVO_MIN_DUTY 100
 
+#define WS2812_GPIO GPIO_NUM_21
+#define WS2812_NUM 12
+
 #endif // _BOARD_CONFIG_H_
