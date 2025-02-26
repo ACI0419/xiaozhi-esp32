@@ -33,12 +33,12 @@ public:
         // 定义设备可以被远程执行的指令
         methods_.AddMethod("TurnOn", "打开灯", ParameterList(), [this](const ParameterList& parameters) {
             power_ = true;
-            ws2812->myfunc((DeviceState)1);
+            ws2812->setLightEffect(1);
         });
 
         methods_.AddMethod("TurnOff", "关闭灯", ParameterList(), [this](const ParameterList& parameters) {
             power_ = false;
-            ws2812->myfunc((DeviceState)3);
+            ws2812->setLightEffect(0);
         });
     }
 };
