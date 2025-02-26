@@ -1,20 +1,22 @@
 #include "iot/thing.h"
 #include "board.h"
 
+#include <string>
+
 #include <driver/gpio.h>
 #include <driver/ledc.h>
 #include <esp_log.h>
 
 #include "boards/bread-compact-wifi-dog/config.h"
 
-#define TAG "Servo"
+#define TAG "Dog"
 
 namespace iot {
 
-// 这里仅定义 Servo 的属性和方法，不包含具体的实现
-class Servo : public Thing {
+// 这里仅定义 Dog 的属性和方法，不包含具体的实现
+class Dog : public Thing {
 private:
-    int angle_ = SERVO_IDLE_ANGLE;
+    std::string motion_ = DOG_DEFAULT_MOTION;
 
     typedef struct {
         gpio_num_t gpio;
@@ -28,7 +30,24 @@ private:
         return (x - in_min) * (out_max - out_min) / (in_max - in_min) + out_min;
     }
 
-    void InitializeServo() {
+    inline void setAngle(servo_config_t servo,int angle){
+        ESP_ERROR_CHECK(
+            ledc_set_duty(
+                LEDC_MODE,
+                servo.channel,
+                map(angle, SERVO_MIN_ANGLE, SERVO_MAX_ANGLE, SERVO_MIN_DUTY, SERVO_MAX_DUTY)
+            )
+        );
+        // Update duty to apply the new value
+        ESP_ERROR_CHECK(
+            ledc_update_duty(
+                LEDC_MODE,
+                servo.channel
+            )
+        );
+    }
+
+    void InitializeDog() {
         // Set the LEDC peripheral configuration
         // Prepare and then apply the LEDC PWM timer configuration
         ledc_timer_config_t ledc_timer = {
@@ -60,37 +79,32 @@ private:
     }
 
 public:
-    Servo() : Thing("Servo", "用于测试的舵机"), angle_(SERVO_IDLE_ANGLE) {
-        InitializeServo();
+    Dog() : Thing("Dog", "一只可以控制的机器狗"), motion_(DOG_DEFAULT_MOTION) {
+        InitializeDog();
 
         // 定义设备的属性
-        properties_.AddNumberProperty("angle", "舵机当前角度", [this]() -> int {
-            return angle_;
+        properties_.AddStringProperty("Dog", "机器狗当前动作", [this]() -> std::string {
+            return motion_;
         });
         
         // 定义设备可以被远程执行的指令
-        methods_.AddMethod("SetAngle", "设置舵机角度", ParameterList({
-            Parameter("angle", "0到180之间的整数", kValueTypeNumber, true)
-        }), [this](const ParameterList& parameters) {
-            for (auto &servo : servos) {
-                ESP_ERROR_CHECK(
-                    ledc_set_duty(
-                        LEDC_MODE, servo.channel, map(
-                            (static_cast<uint8_t>(parameters["angle"].number())), 
-                            SERVO_MIN_ANGLE, 
-                            SERVO_MAX_ANGLE, 
-                            SERVO_MIN_DUTY, 
-                            SERVO_MAX_DUTY
-                        )
-                    )
-                );
-                // Update duty to apply the new value
-                ESP_ERROR_CHECK(ledc_update_duty(LEDC_MODE, servo.channel));
-            }
+        methods_.AddMethod("SetSit", "设置机器狗坐下", ParameterList(), [this](const ParameterList &parameters){
+            motion_="坐";
+            setAngle(servos[0],150);
+            setAngle(servos[1],150);
+            setAngle(servos[2],60);
+            setAngle(servos[3],60);
+        });
+        methods_.AddMethod("SetStand", "设置机器狗站立", ParameterList(), [this](const ParameterList& parameters) {
+            motion_="站";
+            setAngle(servos[0],90);
+            setAngle(servos[1],90);
+            setAngle(servos[2],90);
+            setAngle(servos[3],90);
         });
     }
 };
 
 } // namespace iot
 
-DECLARE_THING(Servo);
+DECLARE_THING(Dog);

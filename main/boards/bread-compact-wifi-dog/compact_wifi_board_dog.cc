@@ -92,7 +92,7 @@ private:
         auto& thing_manager = iot::ThingManager::GetInstance();
         thing_manager.AddThing(iot::CreateThing("Speaker"));
         //thing_manager.AddThing(iot::CreateThing("Lamp")); //和舵机引脚冲突
-        thing_manager.AddThing(iot::CreateThing("Servo"));
+        thing_manager.AddThing(iot::CreateThing("Dog"));
         thing_manager.AddThing(iot::CreateThing("WS2812"));
     }
 
