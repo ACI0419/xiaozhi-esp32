@@ -9,6 +9,8 @@
 #include <mutex>
 #include <vector>
 
+#include "application.h"
+
 struct StripColor {
     uint8_t red = 0, green = 0, blue = 0;
 };
@@ -19,6 +21,7 @@ public:
     virtual ~CircularStrip();
 
     void OnStateChanged() override;
+    void myfunc(DeviceState device_state);
 
 private:
     std::mutex mutex_;

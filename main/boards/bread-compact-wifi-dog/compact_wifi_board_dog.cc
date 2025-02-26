@@ -7,6 +7,7 @@
 #include "config.h"
 #include "iot/thing_manager.h"
 #include "led/single_led.h"
+#include "led/circular_strip.h"
 
 #include <wifi_station.h>
 #include <esp_log.h>
@@ -104,6 +105,10 @@ public:
         InitializeDisplayI2c();
         InitializeButtons();
         InitializeIot();
+        {
+            static CircularStrip myled(GPIO_NUM_21, 12);
+            myled.myfunc((DeviceState)1);
+        }
     }
 
     virtual Led* GetLed() override {

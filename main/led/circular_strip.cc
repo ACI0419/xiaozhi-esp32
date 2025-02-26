@@ -221,3 +221,50 @@ void CircularStrip::OnStateChanged() {
             return;
     }
 }
+
+void CircularStrip::myfunc(DeviceState device_state){
+    switch (device_state) {
+        case kDeviceStateStarting: {
+            StripColor low = { 0, 0, 0 };
+            StripColor high = { LOW_BRIGHTNESS, LOW_BRIGHTNESS, DEFAULT_BRIGHTNESS };
+            Scroll(low, high, 3, 100);
+            break;
+        }
+        case kDeviceStateWifiConfiguring: {
+            StripColor color = { LOW_BRIGHTNESS, LOW_BRIGHTNESS, DEFAULT_BRIGHTNESS };
+            Blink(color, 500);
+            break;
+        }
+        case kDeviceStateIdle:
+            FadeOut(50);
+            break;
+        case kDeviceStateConnecting: {
+            StripColor color = { LOW_BRIGHTNESS, LOW_BRIGHTNESS, DEFAULT_BRIGHTNESS };
+            StaticColor(color);
+            break;
+        }
+        case kDeviceStateListening: {
+            StripColor color = { DEFAULT_BRIGHTNESS, LOW_BRIGHTNESS, LOW_BRIGHTNESS };
+            StaticColor(color);
+            break;
+        }
+        case kDeviceStateSpeaking: {
+            StripColor color = { LOW_BRIGHTNESS, DEFAULT_BRIGHTNESS, LOW_BRIGHTNESS };
+            StaticColor(color);
+            break;
+        }
+        case kDeviceStateUpgrading: {
+            StripColor color = { LOW_BRIGHTNESS, DEFAULT_BRIGHTNESS, LOW_BRIGHTNESS };
+            Blink(color, 100);
+            break;
+        }
+        case kDeviceStateActivating: {
+            StripColor color = { LOW_BRIGHTNESS, DEFAULT_BRIGHTNESS, LOW_BRIGHTNESS };
+            Blink(color, 500);
+            break;
+        }
+        default:
+            ESP_LOGW(TAG, "Unknown led strip event: %d", device_state);
+            return;
+    }
+}
