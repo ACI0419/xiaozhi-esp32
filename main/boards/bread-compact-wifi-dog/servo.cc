@@ -33,7 +33,7 @@ private:
     inline void setAngle(servo_config_t servo,int angle){
         ESP_ERROR_CHECK(
             ledc_set_duty(
-                LEDC_MODE,
+                LEDC_LOW_SPEED_MODE,
                 servo.channel,
                 map(angle, SERVO_MIN_ANGLE, SERVO_MAX_ANGLE, SERVO_MIN_DUTY, SERVO_MAX_DUTY)
             )
@@ -41,7 +41,7 @@ private:
         // Update duty to apply the new value
         ESP_ERROR_CHECK(
             ledc_update_duty(
-                LEDC_MODE,
+                LEDC_LOW_SPEED_MODE,
                 servo.channel
             )
         );
@@ -51,25 +51,25 @@ private:
         // Set the LEDC peripheral configuration
         // Prepare and then apply the LEDC PWM timer configuration
         ledc_timer_config_t ledc_timer = {
-            .speed_mode = LEDC_MODE,
-            .duty_resolution = LEDC_DUTY_RES,
-            .timer_num = LEDC_TIMER,
-            .freq_hz = LEDC_FREQUENCY,
+            .speed_mode = LEDC_LOW_SPEED_MODE,
+            .duty_resolution = LEDC_TIMER_12_BIT,
+            .timer_num = LEDC_TIMER_3,  //TIMER_0被lcd背光占用
+            .freq_hz = 50,
             .clk_cfg = LEDC_AUTO_CLK
         };
         ESP_ERROR_CHECK(ledc_timer_config(&ledc_timer));
 
-        servos[0]={SERVO_0_GPIO,SERVO_0_LEDC_CHANNEL};
-        servos[1]={SERVO_1_GPIO,SERVO_1_LEDC_CHANNEL};
-        servos[2]={SERVO_2_GPIO,SERVO_2_LEDC_CHANNEL};
-        servos[3]={SERVO_3_GPIO,SERVO_3_LEDC_CHANNEL};
+        servos[0]={SERVO_0_GPIO,LEDC_CHANNEL_4};    //CHANNEL_0被lcd背光占用
+        servos[1]={SERVO_1_GPIO,LEDC_CHANNEL_5};
+        servos[2]={SERVO_2_GPIO,LEDC_CHANNEL_6};
+        servos[3]={SERVO_3_GPIO,LEDC_CHANNEL_7};
         
         for (auto &servo : servos) {
             ledc_channel_config_t ledc_channel = {
                 .gpio_num = servo.gpio,
-                .speed_mode = LEDC_MODE,
+                .speed_mode = LEDC_LOW_SPEED_MODE,
                 .channel = servo.channel,
-                .timer_sel = LEDC_TIMER,
+                .timer_sel = LEDC_TIMER_3,
                 // .intr_type = LEDC_INTR_DISABLE,
                 .duty = 0, // Set duty to 0%
                 .hpoint = 0
