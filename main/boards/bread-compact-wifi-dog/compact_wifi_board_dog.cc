@@ -12,6 +12,8 @@
 #include <esp_log.h>
 #include <driver/i2c_master.h>
 #include <esp_lcd_panel_vendor.h>
+#include <esp_lcd_panel_io.h>
+#include <esp_lcd_panel_ops.h>
 #include <driver/spi_common.h>
 
 #define TAG "CompactWifiBoardDog"
@@ -59,11 +61,8 @@ private:
         panel_config.reset_gpio_num = DISPLAY_RST_PIN;
         panel_config.rgb_ele_order = DISPLAY_RGB_ORDER;
         panel_config.bits_per_pixel = 16;
-#if defined(LCD_ILI9341_240X320) || defined(LCD_ILI9341_240X320_NO_IPS)
-        ESP_ERROR_CHECK(esp_lcd_new_panel_ili9341(panel_io, &panel_config, &panel));
-#else
+
         ESP_ERROR_CHECK(esp_lcd_new_panel_st7789(panel_io, &panel_config, &panel));
-#endif
         
         esp_lcd_panel_reset(panel);
  
@@ -72,7 +71,7 @@ private:
         esp_lcd_panel_invert_color(panel, DISPLAY_INVERT_COLOR);
         esp_lcd_panel_swap_xy(panel, DISPLAY_SWAP_XY);
         esp_lcd_panel_mirror(panel, DISPLAY_MIRROR_X, DISPLAY_MIRROR_Y);
-        display_ = new LcdDisplay(panel_io, panel, DISPLAY_BACKLIGHT_PIN, DISPLAY_BACKLIGHT_OUTPUT_INVERT,
+        display_ = new SpiLcdDisplay(panel_io, panel,
                                     DISPLAY_WIDTH, DISPLAY_HEIGHT, DISPLAY_OFFSET_X, DISPLAY_OFFSET_Y, DISPLAY_MIRROR_X, DISPLAY_MIRROR_Y, DISPLAY_SWAP_XY,
                                     {
                                         .text_font = &font_puhui_16_4,
@@ -136,6 +135,9 @@ private:
         //thing_manager.AddThing(iot::CreateThing("Lamp")); //和舵机引脚冲突
         thing_manager.AddThing(iot::CreateThing("Dog"));
         thing_manager.AddThing(iot::CreateThing("WS2812"));
+        if (DISPLAY_BACKLIGHT_PIN != GPIO_NUM_NC) {
+            thing_manager.AddThing(iot::CreateThing("Backlight"));
+        }
     }
 
 public:
@@ -148,6 +150,10 @@ public:
         InitializeLcdDisplay();
         InitializeButtons();
         InitializeIot();
+        if (DISPLAY_BACKLIGHT_PIN != GPIO_NUM_NC) {
+            GetBacklight()->RestoreBrightness();
+        }
+        
     }
 
     virtual Led* GetLed() override {
@@ -168,6 +174,14 @@ public:
 
     virtual Display* GetDisplay() override {
         return display_;
+    }
+
+    virtual Backlight* GetBacklight() override {
+        if (DISPLAY_BACKLIGHT_PIN != GPIO_NUM_NC) {
+            static PwmBacklight backlight(DISPLAY_BACKLIGHT_PIN, DISPLAY_BACKLIGHT_OUTPUT_INVERT);
+            return &backlight;
+        }
+        return nullptr;
     }
 };
 
