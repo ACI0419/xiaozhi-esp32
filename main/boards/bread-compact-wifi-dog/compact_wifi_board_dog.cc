@@ -8,6 +8,7 @@
 #include "iot/thing_manager.h"
 #include "led/single_led.h"
 #include "ip5306_i2c.h"
+#include "power_save_timer.h"
 
 #include <wifi_station.h>
 #include <esp_log.h>
@@ -40,6 +41,15 @@ private:
     Button volume_down_button_;
     i2c_master_bus_handle_t i2c_bus_;
     Pmic* pmic_ = nullptr;
+    PowerSaveTimer* power_save_timer_;
+
+    void InitializePowerSaveTimer() {
+        power_save_timer_ = new PowerSaveTimer(-1, -1, 600);
+        power_save_timer_->OnShutdownRequest([this]() {
+            pmic_->PowerOff();
+        });
+        power_save_timer_->SetEnabled(true);
+    }
 
     void InitializeI2c() {
         i2c_master_bus_config_t bus_config = {
@@ -109,6 +119,7 @@ private:
 
     void InitializeButtons() {
         boot_button_.OnClick([this]() {
+            power_save_timer_->WakeUp();
             auto& app = Application::GetInstance();
             if (app.GetDeviceState() == kDeviceStateStarting && !WifiStation::GetInstance().IsConnected()) {
                 ResetWifiConfiguration();
@@ -116,13 +127,16 @@ private:
             app.ToggleChatState();
         });
         touch_button_.OnPressDown([this]() {
+            power_save_timer_->WakeUp();
             Application::GetInstance().StartListening();
         });
         touch_button_.OnPressUp([this]() {
+            power_save_timer_->WakeUp();
             Application::GetInstance().StopListening();
         });
 
         volume_up_button_.OnClick([this]() {
+            power_save_timer_->WakeUp();
             auto codec = GetAudioCodec();
             auto volume = codec->output_volume() + 10;
             if (volume > 100) {
@@ -133,11 +147,13 @@ private:
         });
 
         volume_up_button_.OnLongPress([this]() {
+            power_save_timer_->WakeUp();
             GetAudioCodec()->SetOutputVolume(100);
             GetDisplay()->ShowNotification("最大音量");
         });
 
         volume_down_button_.OnClick([this]() {
+            power_save_timer_->WakeUp();
             auto codec = GetAudioCodec();
             auto volume = codec->output_volume() - 10;
             if (volume < 0) {
@@ -148,6 +164,7 @@ private:
         });
 
         volume_down_button_.OnLongPress([this]() {
+            power_save_timer_->WakeUp();
             GetAudioCodec()->SetOutputVolume(0);
             GetDisplay()->ShowNotification("已静音");
         });
@@ -178,6 +195,7 @@ public:
         InitializeLcdDisplay();
         InitializeButtons();
         InitializeIot();
+        InitializePowerSaveTimer();
         if (DISPLAY_BACKLIGHT_PIN != GPIO_NUM_NC) {
             GetBacklight()->RestoreBrightness();
         }
@@ -212,8 +230,20 @@ public:
     }
 
     virtual bool GetBatteryLevel(int &level, bool& charging) override {
+        static bool last_charging = false;
         charging = pmic_->IsCharging();
+        if (charging != last_charging) {
+            power_save_timer_->WakeUp();
+            last_charging = charging;
+        }
+
         level = pmic_->GetBatteryLevel();
+
+        if (pmic_->IsDischarging()) {
+            power_save_timer_->SetEnabled(true);
+        } else {
+            power_save_timer_->SetEnabled(false);
+        }
         return true;
     }
 };
