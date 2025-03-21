@@ -7,6 +7,7 @@
 #include "config.h"
 #include "iot/thing_manager.h"
 #include "led/single_led.h"
+#include "ip5306_i2c.h"
 
 #include <wifi_station.h>
 #include <esp_log.h>
@@ -21,13 +22,40 @@
 LV_FONT_DECLARE(font_puhui_16_4);
 LV_FONT_DECLARE(font_awesome_16_4);
 
-class CompactWifiBoardDog : public WifiBoard {
+class Pmic : public IP5306 {
+public:
+    Pmic(i2c_master_bus_handle_t i2c_bus, uint8_t addr) : IP5306(i2c_bus, addr)
+    {
+
+    }
+};
+
+class CompactWifiBoardDog : public WifiBoard
+{
 private:
     LcdDisplay* display_;
     Button boot_button_;
     Button touch_button_;
     Button volume_up_button_;
     Button volume_down_button_;
+    i2c_master_bus_handle_t i2c_bus_;
+    Pmic* pmic_ = nullptr;
+
+    void InitializeI2c() {
+        i2c_master_bus_config_t bus_config = {
+            .i2c_port = (i2c_port_t)0,
+            .sda_io_num = SDA_PIN,
+            .scl_io_num = SCL_PIN,
+            .clk_source = I2C_CLK_SRC_DEFAULT,
+            .glitch_ignore_cnt = 7,
+            .intr_priority = 0,
+            .trans_queue_depth = 0,
+            .flags = {
+                .enable_internal_pullup = 1,
+            },
+        };
+        ESP_ERROR_CHECK(i2c_new_master_bus(&bus_config, &i2c_bus_));
+    }
 
     void InitializeSpi() {
         spi_bus_config_t buscfg = {};
@@ -63,24 +91,21 @@ private:
         panel_config.bits_per_pixel = 16;
 
         ESP_ERROR_CHECK(esp_lcd_new_panel_st7789(panel_io, &panel_config, &panel));
-        
+
         esp_lcd_panel_reset(panel);
- 
 
         esp_lcd_panel_init(panel);
         esp_lcd_panel_invert_color(panel, DISPLAY_INVERT_COLOR);
         esp_lcd_panel_swap_xy(panel, DISPLAY_SWAP_XY);
         esp_lcd_panel_mirror(panel, DISPLAY_MIRROR_X, DISPLAY_MIRROR_Y);
         display_ = new SpiLcdDisplay(panel_io, panel,
-                                    DISPLAY_WIDTH, DISPLAY_HEIGHT, DISPLAY_OFFSET_X, DISPLAY_OFFSET_Y, DISPLAY_MIRROR_X, DISPLAY_MIRROR_Y, DISPLAY_SWAP_XY,
-                                    {
-                                        .text_font = &font_puhui_16_4,
-                                        .icon_font = &font_awesome_16_4,
-                                        .emoji_font = DISPLAY_HEIGHT >= 240 ? font_emoji_64_init() : font_emoji_32_init(),
-                                    });
+                                     DISPLAY_WIDTH, DISPLAY_HEIGHT, DISPLAY_OFFSET_X, DISPLAY_OFFSET_Y, DISPLAY_MIRROR_X, DISPLAY_MIRROR_Y, DISPLAY_SWAP_XY,
+                                     {
+                                         .text_font = &font_puhui_16_4,
+                                         .icon_font = &font_awesome_16_4,
+                                         .emoji_font = DISPLAY_HEIGHT >= 240 ? font_emoji_64_init() : font_emoji_32_init(),
+                                     });
     }
-
-
 
     void InitializeButtons() {
         boot_button_.OnClick([this]() {
@@ -138,6 +163,7 @@ private:
         if (DISPLAY_BACKLIGHT_PIN != GPIO_NUM_NC) {
             thing_manager.AddThing(iot::CreateThing("Backlight"));
         }
+        thing_manager.AddThing(iot::CreateThing("Battery"));
     }
 
 public:
@@ -146,6 +172,8 @@ public:
         touch_button_(TOUCH_BUTTON_GPIO),
         volume_up_button_(VOLUME_UP_BUTTON_GPIO),
         volume_down_button_(VOLUME_DOWN_BUTTON_GPIO) {
+        InitializeI2c();
+        pmic_ = new Pmic(i2c_bus_, IP5306_I2C_ADDR);
         InitializeSpi();
         InitializeLcdDisplay();
         InitializeButtons();
@@ -153,7 +181,6 @@ public:
         if (DISPLAY_BACKLIGHT_PIN != GPIO_NUM_NC) {
             GetBacklight()->RestoreBrightness();
         }
-        
     }
 
     virtual Led* GetLed() override {
@@ -164,10 +191,10 @@ public:
     virtual AudioCodec* GetAudioCodec() override {
 #ifdef AUDIO_I2S_METHOD_SIMPLEX
         static NoAudioCodecSimplex audio_codec(AUDIO_INPUT_SAMPLE_RATE, AUDIO_OUTPUT_SAMPLE_RATE,
-            AUDIO_I2S_SPK_GPIO_BCLK, AUDIO_I2S_SPK_GPIO_LRCK, AUDIO_I2S_SPK_GPIO_DOUT, AUDIO_I2S_MIC_GPIO_SCK, AUDIO_I2S_MIC_GPIO_WS, AUDIO_I2S_MIC_GPIO_DIN);
+                                               AUDIO_I2S_SPK_GPIO_BCLK, AUDIO_I2S_SPK_GPIO_LRCK, AUDIO_I2S_SPK_GPIO_DOUT, AUDIO_I2S_MIC_GPIO_SCK, AUDIO_I2S_MIC_GPIO_WS, AUDIO_I2S_MIC_GPIO_DIN);
 #else
         static NoAudioCodecDuplex audio_codec(AUDIO_INPUT_SAMPLE_RATE, AUDIO_OUTPUT_SAMPLE_RATE,
-            AUDIO_I2S_GPIO_BCLK, AUDIO_I2S_GPIO_WS, AUDIO_I2S_GPIO_DOUT, AUDIO_I2S_GPIO_DIN);
+                                              AUDIO_I2S_GPIO_BCLK, AUDIO_I2S_GPIO_WS, AUDIO_I2S_GPIO_DOUT, AUDIO_I2S_GPIO_DIN);
 #endif
         return &audio_codec;
     }
@@ -182,6 +209,12 @@ public:
             return &backlight;
         }
         return nullptr;
+    }
+
+    virtual bool GetBatteryLevel(int &level, bool& charging) override {
+        charging = pmic_->IsCharging();
+        level = pmic_->GetBatteryLevel();
+        return true;
     }
 };
 
