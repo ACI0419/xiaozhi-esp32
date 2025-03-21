@@ -10,7 +10,7 @@
 #include "ip5306_i2c.h"
 #include "power_save_timer.h"
 #include "assets/lang_config.h"
-
+#include "esp_sleep.h"
 #include <wifi_station.h>
 #include <esp_log.h>
 #include <driver/i2c_master.h>
@@ -42,6 +42,7 @@ private:
     Button touch_button_;
     Button volume_up_button_;
     Button volume_down_button_;
+    Button shutdown_button_;
     i2c_master_bus_handle_t i2c_bus_;
     Pmic* pmic_ = nullptr;
     PowerSaveTimer* power_save_timer_;
@@ -171,6 +172,19 @@ private:
             GetAudioCodec()->SetOutputVolume(0);
             GetDisplay()->ShowNotification(Lang::Strings::MUTED);
         });
+
+        shutdown_button_.OnDoubleClick([this]() {
+            ESP_LOGW(TAG, "Shutdown, entering light sleep");
+            // 配置唤醒源
+            gpio_wakeup_enable((gpio_num_t)SHUTDOWN_BUTTON_GPIO, GPIO_INTR_LOW_LEVEL);
+            esp_sleep_enable_gpio_wakeup();
+            while (gpio_get_level(SHUTDOWN_BUTTON_GPIO) == 0) {
+                vTaskDelay(pdMS_TO_TICKS(10));
+            }
+            // 进入轻睡眠状态
+            esp_light_sleep_start();
+            esp_restart();
+        });
     }
 
     // 物联网初始化，添加对 AI 可见设备
@@ -191,7 +205,8 @@ public:
         boot_button_(BOOT_BUTTON_GPIO),
         touch_button_(TOUCH_BUTTON_GPIO),
         volume_up_button_(VOLUME_UP_BUTTON_GPIO),
-        volume_down_button_(VOLUME_DOWN_BUTTON_GPIO) {
+        volume_down_button_(VOLUME_DOWN_BUTTON_GPIO),
+        shutdown_button_(SHUTDOWN_BUTTON_GPIO) {
         InitializeI2c();
         pmic_ = new Pmic(i2c_bus_, IP5306_I2C_ADDR);
         InitializeSpi();

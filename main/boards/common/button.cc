@@ -25,8 +25,8 @@ Button::Button(gpio_num_t gpio_num, bool active_high) : gpio_num_(gpio_num) {
     }
     button_config_t button_config = {
         .type = BUTTON_TYPE_GPIO,
-        .long_press_time = 1000,
-        .short_press_time = 50,
+        // .long_press_time = 1000, //使用这两个参数会导致双击失效
+        // .short_press_time = 50,
         .gpio_button_config = {
             .gpio_num = gpio_num,
             .active_level = static_cast<uint8_t>(active_high ? 1 : 0)
