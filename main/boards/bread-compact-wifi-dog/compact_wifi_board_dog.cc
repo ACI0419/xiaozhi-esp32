@@ -28,7 +28,9 @@ class Pmic : public IP5306 {
 public:
     Pmic(i2c_master_bus_handle_t i2c_bus, uint8_t addr) : IP5306(i2c_bus, addr)
     {
-
+        WriteReg(0x01, ReadReg(0x01)&0b11111011);
+        WriteReg(0x21, ReadReg(0x21)&0b00111111);
+        WriteReg(0x21, ReadReg(0x21)|0b00011100);
     }
 };
 
