@@ -156,6 +156,10 @@ choice BOARD_TYPE
         bool "无名科技星智1.54(ML307)"
     config BOARD_TYPE_SENSECAP_WATCHER
         bool "SenseCAP Watcher"
+    config BOARD_TYPE_JC1060P470
+        bool "jc1060p470"
+    config BOARD_TYPE_JC1060P4A1
+        bool "jc1060p4a1"
 endchoice
 
 choice DISPLAY_OLED_TYPE
@@ -233,14 +237,14 @@ config USE_WECHAT_MESSAGE_STYLE
 config USE_WAKE_WORD_DETECT
     bool "启用唤醒词检测"
     default y
-    depends on IDF_TARGET_ESP32S3 && SPIRAM
+    depends on IDF_TARGET_ESP32S3 || IDF_TARGET_ESP32P4 && SPIRAM
     help
         需要 ESP32 S3 与 AFE 支持
 
 config USE_AUDIO_PROCESSOR
     bool "启用音频降噪、增益处理"
     default y
-    depends on IDF_TARGET_ESP32S3 && SPIRAM
+    depends on IDF_TARGET_ESP32S3 || IDF_TARGET_ESP32P4 && SPIRAM
     help
         需要 ESP32 S3 与 AFE 支持
 
