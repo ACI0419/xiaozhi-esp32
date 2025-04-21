@@ -7,7 +7,7 @@ cmake_minimum_required(VERSION 3.16)
 set(PROJECT_VER "1.5.5")
 
 set(EXTRA_COMPONENT_DIRS
-    ../common_components
+    common_components
     )
     
 # Add this line to disable the specific warning
