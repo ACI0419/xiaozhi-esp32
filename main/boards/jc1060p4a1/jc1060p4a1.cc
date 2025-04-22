@@ -21,8 +21,8 @@
 
 #define TAG "jc1060p470"
 
-LV_FONT_DECLARE(font_puhui_20_4);
-LV_FONT_DECLARE(font_awesome_20_4);
+LV_FONT_DECLARE(font_puhui_30_4);
+LV_FONT_DECLARE(font_awesome_30_4);
 
 class jc1060p4a1 : public WifiBoard {
 private:
@@ -109,8 +109,8 @@ static esp_err_t bsp_enable_dsi_phy_power(void)
         display__ = new MipiLcdDisplay(io,disp_panel,LCD_H_RES,LCD_V_RES,
                  DISPLAY_OFFSET_X, DISPLAY_OFFSET_Y, DISPLAY_MIRROR_X, DISPLAY_MIRROR_Y, DISPLAY_SWAP_XY,
                  {
-                    .text_font = &font_puhui_20_4,
-                    .icon_font = &font_awesome_20_4,
+                    .text_font = &font_puhui_30_4,
+                    .icon_font = &font_awesome_30_4,
                     .emoji_font = font_emoji_64_init(),
                 });
         return;
