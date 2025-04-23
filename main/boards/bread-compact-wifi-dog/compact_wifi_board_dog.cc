@@ -187,6 +187,19 @@ private:
         });
     }
 
+    void InitializeServoController() {
+        // Set the LEDC peripheral configuration
+        // Prepare and then apply the LEDC PWM timer configuration
+        ledc_timer_config_t ledc_timer = {
+            .speed_mode = LEDC_LOW_SPEED_MODE,
+            .duty_resolution = LEDC_TIMER_12_BIT,
+            .timer_num = LEDC_TIMER_3,  //TIMER_0被lcd背光占用
+            .freq_hz = 50,
+            .clk_cfg = LEDC_AUTO_CLK
+        };
+        ESP_ERROR_CHECK(ledc_timer_config(&ledc_timer));
+    }
+
     // 物联网初始化，添加对 AI 可见设备
     void InitializeIot() {
         auto& thing_manager = iot::ThingManager::GetInstance();
@@ -212,6 +225,7 @@ public:
         InitializeSpi();
         InitializeLcdDisplay();
         InitializeButtons();
+        InitializeServoController();
         InitializeIot();
         InitializePowerSaveTimer();
         if (DISPLAY_BACKLIGHT_PIN != GPIO_NUM_NC) {
