@@ -198,6 +198,9 @@ private:
             .clk_cfg = LEDC_AUTO_CLK
         };
         ESP_ERROR_CHECK(ledc_timer_config(&ledc_timer));
+
+        // 安装 LEDC 渐变服务
+        ESP_ERROR_CHECK(ledc_fade_func_install(0));
     }
 
     // 物联网初始化，添加对 AI 可见设备

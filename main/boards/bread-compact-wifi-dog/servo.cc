@@ -27,18 +27,25 @@ long Servo::map(long x, long in_min, long in_max, long out_min, long out_max)
 }
 
 void Servo::write(int angle){
+    long target_duty = map(angle, SERVO_MIN_ANGLE, SERVO_MAX_ANGLE, SERVO_MIN_DUTY, SERVO_MAX_DUTY);
+    // 设置渐变时间，单位为毫秒，这里设置为 500ms，可以根据需求调整
+    const int fade_time_ms = 500; 
+
+    // 设置渐变目标占空比和时间
     ESP_ERROR_CHECK(
-        ledc_set_duty(
+        ledc_set_fade_with_time(
             LEDC_LOW_SPEED_MODE,
             channel_,
-            map(angle, SERVO_MIN_ANGLE, SERVO_MAX_ANGLE, SERVO_MIN_DUTY, SERVO_MAX_DUTY)
+            target_duty,
+            fade_time_ms
         )
     );
-    // Update duty to apply the new value
+    // 启动渐变
     ESP_ERROR_CHECK(
-        ledc_update_duty(
+        ledc_fade_start(
             LEDC_LOW_SPEED_MODE,
-            channel_
+            channel_,
+            LEDC_FADE_NO_WAIT
         )
     );
 }
