@@ -5,6 +5,8 @@
 #include <string>
 
 #include <esp_log.h>
+#include <freertos/FreeRTOS.h>
+#include <freertos/task.h>
 
 #include "boards/bread-compact-wifi-dog/config.h"
 
@@ -17,6 +19,8 @@ class Dog : public Thing {
 private:
     std::string motion_ = DOG_DEFAULT_MOTION;
     bool running_ = false;
+
+    TaskHandle_t currentTaskHandle = nullptr;
 
     Servo servos[4]={
         Servo(SERVO_0_GPIO,LEDC_CHANNEL_4),    //CHANNEL_0被lcd背光占用
@@ -35,24 +39,48 @@ public:
         // 定义设备可以被远程执行的指令
         methods_.AddMethod("SetSit", "设置机器狗坐下", ParameterList(), [this](const ParameterList &parameters){
             motion_="坐下";
-            if(!running_){
-                running_=true;
-                servos[0].write(150);
-                servos[1].write(150);
-                servos[2].write(60);
-                servos[3].write(60);
-                running_=false;
+            if(currentTaskHandle == nullptr){
+                xTaskCreate(
+                    [](void* arg) {
+                        Dog* dog = static_cast<Dog*>(arg);
+
+                        dog->servos[0].write(90);
+                        dog->servos[1].write(140);
+                        dog->servos[2].write(90);
+                        dog->servos[3].write(40);
+
+                        dog->currentTaskHandle = nullptr;
+                        vTaskDelete(nullptr);
+                    },
+                    "SitTask",
+                    2048,
+                    this,
+                    5,
+                    &currentTaskHandle
+                );
             }
         });
         methods_.AddMethod("SetStand", "设置机器狗站立", ParameterList(), [this](const ParameterList& parameters) {
             motion_="站立";
-            if(!running_){
-                running_=true;
-                servos[0].write(90);
-                servos[1].write(90);
-                servos[2].write(90);
-                servos[3].write(90);
-                running_=false;
+            if(currentTaskHandle == nullptr){
+                xTaskCreate(
+                    [](void* arg) {
+                        Dog* dog = static_cast<Dog*>(arg);
+
+                        dog->servos[0].write(90);
+                        dog->servos[1].write(90);
+                        dog->servos[2].write(90);
+                        dog->servos[3].write(90);
+
+                        dog->currentTaskHandle = nullptr;
+                        vTaskDelete(nullptr);
+                    },
+                    "StandTask",
+                    2048,
+                    this,
+                    5,
+                    &currentTaskHandle
+                );
             }
         });
         servos[0].write(90);

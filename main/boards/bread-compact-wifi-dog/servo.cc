@@ -28,8 +28,8 @@ long Servo::map(long x, long in_min, long in_max, long out_min, long out_max)
 
 void Servo::write(int angle){
     long target_duty = map(angle, SERVO_MIN_ANGLE, SERVO_MAX_ANGLE, SERVO_MIN_DUTY, SERVO_MAX_DUTY);
-    // 设置渐变时间，单位为毫秒，这里设置为 500ms，可以根据需求调整
-    const int fade_time_ms = 500; 
+    // 设置渐变时间，单位为毫秒，可以根据需求调整
+    const int fade_time_ms = 200; 
 
     // 设置渐变目标占空比和时间
     ESP_ERROR_CHECK(
