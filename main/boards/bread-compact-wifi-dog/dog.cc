@@ -305,10 +305,14 @@ public:
             }
         });
         
-        servos[0].write(90);
-        servos[1].write(90);
-        servos[2].write(90);
-        servos[3].write(90);
+        servos[0].writeImd(90);
+        vTaskDelay(300/portTICK_PERIOD_MS);
+        servos[1].writeImd(90);
+        vTaskDelay(300/portTICK_PERIOD_MS);
+        servos[2].writeImd(90);
+        vTaskDelay(300/portTICK_PERIOD_MS);
+        servos[3].writeImd(90);
+        vTaskDelay(300/portTICK_PERIOD_MS);
     }
 };
 

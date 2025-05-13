@@ -9,4 +9,5 @@ private:
 public:
     Servo(gpio_num_t gpio,ledc_channel_t channel);
     void write(int angle);
+    void writeImd(int angle);
 };

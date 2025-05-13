@@ -26,6 +26,26 @@ long Servo::map(long x, long in_min, long in_max, long out_min, long out_max)
     return (x - in_min) * (out_max - out_min) / (in_max - in_min) + out_min;
 }
 
+// 新增函数，立即设置ledc占空比为目标值
+void Servo::writeImd(int angle) {
+    long duty = map(angle, SERVO_MIN_ANGLE, SERVO_MAX_ANGLE, SERVO_MIN_DUTY, SERVO_MAX_DUTY);
+    // 设置目标占空比
+    ESP_ERROR_CHECK(
+        ledc_set_duty(
+            LEDC_LOW_SPEED_MODE,
+            channel_,
+            duty
+        )
+    );
+    // 更新占空比以应用新值
+    ESP_ERROR_CHECK(
+        ledc_update_duty(
+            LEDC_LOW_SPEED_MODE,
+            channel_
+        )
+    );
+}
+
 void Servo::write(int angle){
     long target_duty = map(angle, SERVO_MIN_ANGLE, SERVO_MAX_ANGLE, SERVO_MIN_DUTY, SERVO_MAX_DUTY);
     // 设置渐变时间，单位为毫秒，可以根据需求调整
