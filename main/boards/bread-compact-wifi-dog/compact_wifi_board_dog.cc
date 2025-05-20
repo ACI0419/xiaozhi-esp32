@@ -264,9 +264,10 @@ public:
         return nullptr;
     }
 
-    virtual bool GetBatteryLevel(int &level, bool& charging) override {
+    virtual bool GetBatteryLevel(int &level, bool& charging, bool& discharging) override {
         static bool last_charging = false;
         charging = pmic_->IsCharging();
+        discharging = pmic_->IsDischarging();
         if (charging != last_charging) {
             power_save_timer_->WakeUp();
             last_charging = charging;
