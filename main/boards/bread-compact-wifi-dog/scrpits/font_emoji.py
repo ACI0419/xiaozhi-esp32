@@ -36,33 +36,33 @@ def get_emoji_png(emoji_utf8):
     if not os.path.exists("./build"):
         os.makedirs("./build")
     
-    # 定义 emoji 图像目录
+    # 定义 emoji 图像目录，修改为查找 PNG 图片
     emoji_dir = os.path.join("main", "boards", "bread-compact-wifi-dog", "emoji_img")
     
     # 将 Unicode 编码转换为对应的 emoji 名称
     reverse_emoji_mapping = {v: k for k, v in emoji_mapping.items()}
     emoji_name = reverse_emoji_mapping.get(int(emoji_utf8, 16))
     
-    # 尝试获取目标 BMP 文件路径
-    bmp_path = os.path.join(emoji_dir, f"{emoji_name}.bmp")
+    # 尝试获取目标 PNG 文件路径
+    png_path = os.path.join(emoji_dir, f"{emoji_name}.png")
     
-    # 若目标 BMP 文件不存在，使用 "neutral" 对应的图像
-    if not os.path.exists(bmp_path):
-        neutral_name = list(emoji_mapping.keys())[0]
-        bmp_path = os.path.join(emoji_dir, f"{neutral_name}.bmp")
-    
-    # 生成 PNG 文件路径
-    png_path = f"./build/emoji_{emoji_utf8}.png"
-    
+    # 若目标 PNG 文件不存在，使用 "neutral" 对应的图像
     if not os.path.exists(png_path):
-        try:
-            # 打开 BMP 图像并保存为 PNG
-            with Image.open(bmp_path) as img:
-                img.save(png_path, "PNG")
-        except Exception as e:
-            print(f"Error processing {bmp_path}: {e}")
+        neutral_name = list(emoji_mapping.keys())[0]
+        png_path = os.path.join(emoji_dir, f"{neutral_name}.png")
     
-    return png_path
+    # 生成最终保存的 PNG 文件路径
+    final_png_path = f"./build/emoji_{emoji_utf8}.png"
+    
+    if not os.path.exists(final_png_path):
+        try:
+            # 打开 PNG 图像并保存到新路径
+            with Image.open(png_path) as img:
+                img.save(final_png_path, "PNG")
+        except Exception as e:
+            print(f"Error processing {png_path}: {e}")
+    
+    return final_png_path
 
 def parse_arguments():
     parser = argparse.ArgumentParser(description='Emoji font converter utility')
