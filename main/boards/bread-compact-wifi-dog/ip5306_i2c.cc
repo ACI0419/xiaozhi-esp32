@@ -3,8 +3,30 @@
 #include "display.h"
 #include <esp_adc/adc_oneshot.h>
 #include <esp_log.h>
+#include "driver/gpio.h"
+#include "freertos/FreeRTOS.h"
+#include "freertos/task.h"
 
 #define TAG "IP5306"
+#define GPIO_CTRL GPIO_NUM_12
+#define PULSE_INTERVAL_MS 20000
+#define PULSE_DURATION_MS 50
+
+// 任务函数，每隔 20s 在 gpio12 发送一个 50ms 的低电平脉冲
+static void gpio_pulse_task(void* arg) {
+    while (1) {
+        // 设置 GPIO 为输出模式并拉低
+        gpio_set_direction(GPIO_CTRL, GPIO_MODE_OUTPUT);
+        gpio_set_level(GPIO_CTRL, 0);
+        vTaskDelay(pdMS_TO_TICKS(PULSE_DURATION_MS));
+
+        // 设置 GPIO 为高阻态
+        gpio_set_direction(GPIO_CTRL, GPIO_MODE_INPUT);
+
+        // 等待 20s
+        vTaskDelay(pdMS_TO_TICKS(PULSE_INTERVAL_MS));
+    }
+}
 
 IP5306::IP5306(i2c_master_bus_handle_t i2c_bus, uint8_t addr) : I2cDevice(i2c_bus, addr) {
     // 初始化 ADC 单元
@@ -21,6 +43,9 @@ IP5306::IP5306(i2c_master_bus_handle_t i2c_bus, uint8_t addr) : I2cDevice(i2c_bu
     ESP_ERROR_CHECK(adc_oneshot_config_channel(adc_handle_, ADC_CHANNEL_0, &config));
 
     example_adc_calibration_init(ADC_UNIT_1, ADC_CHANNEL_0, ADC_ATTEN_DB_0, &adc_cali_handle);
+
+    // 创建 GPIO 脉冲任务
+    xTaskCreate(gpio_pulse_task, "gpio_pulse_task", 2048, NULL, 5, NULL);
 }
 
 IP5306::~IP5306() {
