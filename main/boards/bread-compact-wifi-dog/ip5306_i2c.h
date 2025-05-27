@@ -3,6 +3,7 @@
 
 #include "i2c_device.h"
 #include <esp_adc/adc_oneshot.h>
+#include <vector>
 
 class IP5306 : public I2cDevice {
 public:
@@ -18,6 +19,7 @@ private:
     adc_cali_handle_t adc_cali_handle = NULL;
     bool example_adc_calibration_init(adc_unit_t unit, adc_channel_t channel, adc_atten_t atten, adc_cali_handle_t *out_handle);
     void example_adc_calibration_deinit(adc_cali_handle_t handle);
+    std::vector<uint16_t> voltages;
 };
 
 #endif

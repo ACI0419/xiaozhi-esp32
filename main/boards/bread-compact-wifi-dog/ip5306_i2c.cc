@@ -50,6 +50,48 @@ int IP5306::GetBatteryLevel() {
     ESP_ERROR_CHECK(adc_cali_raw_to_voltage(adc_cali_handle, adc_value, &voltage));
 
     voltage*=6;
+
+    // 将 ADC 值添加到队列中
+    voltages.push_back(voltage);
+    if (voltages.size() > 60) {
+        voltages.erase(voltages.begin());
+    }
+    uint32_t average = 0;
+    for (auto value : voltages) {
+        average += value;
+    }
+    average /= voltages.size();
+
+    // 定义电池电量区间
+    const struct {
+        uint16_t voltage;
+        uint8_t level;
+    } levels[] = {
+        {3200, 0},
+        {3600, 20},
+        {3700, 40},
+        {3800, 60},
+        {4000, 80},
+        {4200, 100}
+    };
+
+    // 低于最低值时
+    if (average < levels[0].voltage) {
+        return 0;
+    }
+    // 高于最高值时
+    else if (average >= levels[5].voltage) {
+        return 100;
+    } else {
+        // 线性插值计算中间值
+        for (int i = 0; i < 5; i++) {
+            if (average >= levels[i].voltage && average < levels[i+1].voltage) {
+                float ratio = static_cast<float>(average - levels[i].voltage) / (levels[i+1].voltage - levels[i].voltage);
+                return levels[i].level + ratio * (levels[i+1].level - levels[i].level);
+            }
+        }
+    }
+
     // 根据电压计算电量百分比
     // 3000mV 对应 0%，4300mV对应 100%
     float percentage = ((voltage - 3000.0f) / (4300 - 3000)) * 100;
