@@ -10,21 +10,41 @@
 #define TAG "IP5306"
 #define GPIO_CTRL GPIO_NUM_12
 #define PULSE_INTERVAL_MS 20000
-#define PULSE_DURATION_MS 50
+#define PULSE_DURATION_MS 200
 
-// 任务函数，每隔 20s 在 gpio12 发送一个 50ms 的低电平脉冲
+// 任务句柄，用于发送通知
+static TaskHandle_t gpio_pulse_task_handle = nullptr;
+
+// 任务函数，每隔 20s 发送一个 50ms 的低电平脉冲，收到通知时发送两个脉冲
 static void gpio_pulse_task(void* arg) {
     while (1) {
-        // 设置 GPIO 为输出模式并拉低
-        gpio_set_direction(GPIO_CTRL, GPIO_MODE_OUTPUT);
-        gpio_set_level(GPIO_CTRL, 0);
-        vTaskDelay(pdMS_TO_TICKS(PULSE_DURATION_MS));
+        // 等待 20s 或任务通知
+        uint32_t notification_value = ulTaskNotifyTake(pdTRUE, pdMS_TO_TICKS(PULSE_INTERVAL_MS));
+        if (notification_value > 0) {
+            // 收到通知，发送两个脉冲
+            for (int i = 0; i < 2; i++) {
+                // 设置 GPIO 为输出模式并拉低
+                gpio_set_direction(GPIO_CTRL, GPIO_MODE_OUTPUT);
+                gpio_set_level(GPIO_CTRL, 0);
+                vTaskDelay(pdMS_TO_TICKS(PULSE_DURATION_MS));
 
-        // 设置 GPIO 为高阻态
-        gpio_set_direction(GPIO_CTRL, GPIO_MODE_INPUT);
+                // 设置 GPIO 为高阻态
+                gpio_set_direction(GPIO_CTRL, GPIO_MODE_INPUT);
 
-        // 等待 20s
-        vTaskDelay(pdMS_TO_TICKS(PULSE_INTERVAL_MS));
+                if (i < 1) {
+                    // 脉冲之间间隔 500ms
+                    vTaskDelay(pdMS_TO_TICKS(300));
+                }
+            }
+        } else {
+            // 20s 间隔时间到，发送一个脉冲
+            gpio_set_direction(GPIO_CTRL, GPIO_MODE_OUTPUT);
+            gpio_set_level(GPIO_CTRL, 0);
+            vTaskDelay(pdMS_TO_TICKS(PULSE_DURATION_MS));
+
+            // 设置 GPIO 为高阻态
+            gpio_set_direction(GPIO_CTRL, GPIO_MODE_INPUT);
+        }
     }
 }
 
@@ -45,7 +65,7 @@ IP5306::IP5306(i2c_master_bus_handle_t i2c_bus, uint8_t addr) : I2cDevice(i2c_bu
     example_adc_calibration_init(ADC_UNIT_1, ADC_CHANNEL_0, ADC_ATTEN_DB_0, &adc_cali_handle);
 
     // 创建 GPIO 脉冲任务
-    xTaskCreate(gpio_pulse_task, "gpio_pulse_task", 2048, NULL, 5, NULL);
+    xTaskCreate(gpio_pulse_task, "gpio_pulse_task", 2048, NULL, 5, &gpio_pulse_task_handle);
 }
 
 IP5306::~IP5306() {
@@ -128,6 +148,9 @@ int IP5306::GetBatteryLevel() {
 void IP5306::PowerOff() {
     // WriteReg(0x01, ReadReg(0x01)|0b00100000);
     // WriteReg(0x00, ReadReg(0x00)&0b11011111);
+    if (gpio_pulse_task_handle != nullptr) {
+        xTaskNotifyGive(gpio_pulse_task_handle);
+    }
 }
 
 bool IP5306::example_adc_calibration_init(adc_unit_t unit, adc_channel_t channel, adc_atten_t atten, adc_cali_handle_t *out_handle)
