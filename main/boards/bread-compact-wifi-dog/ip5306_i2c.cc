@@ -8,12 +8,6 @@
 #include "freertos/task.h"
 
 #define TAG "IP5306"
-#define GPIO_CTRL GPIO_NUM_12
-#define PULSE_INTERVAL_MS 20000
-#define PULSE_DURATION_MS 200
-
-// 任务句柄，用于发送通知
-static TaskHandle_t gpio_pulse_task_handle = nullptr;
 
 // 任务函数，每隔 20s 发送一个 50ms 的低电平脉冲，收到通知时发送两个脉冲
 static void gpio_pulse_task(void* arg) {
@@ -106,19 +100,6 @@ int IP5306::GetBatteryLevel() {
         average += value;
     }
     average /= voltages.size();
-
-    // 定义电池电量区间
-    const struct {
-        uint16_t voltage;
-        uint8_t level;
-    } levels[] = {
-        {3200, 0},
-        {3600, 20},
-        {3700, 40},
-        {3800, 60},
-        {4000, 80},
-        {4200, 100}
-    };
 
     // 低于最低值时
     if (average < levels[0].voltage) {
